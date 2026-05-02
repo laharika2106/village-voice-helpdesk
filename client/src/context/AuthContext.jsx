@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import api from "../services/api.js";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { auth } from "../firebase";
 
 const AuthContext = createContext(null);
 
@@ -8,31 +9,21 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("vvh_token");
-    if (!token) {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
       setLoading(false);
-      return;
-    }
+    });
 
-    api
-      .get("/auth/me")
-      .then((response) => setUser(response.data.user))
-      .catch(() => localStorage.removeItem("vvh_token"))
-      .finally(() => setLoading(false));
+    return () => unsubscribe();
   }, []);
 
-  async function login(phone, password) {
-    const response = await api.post("/auth/login", { phone, password });
-    localStorage.setItem("vvh_token", response.data.token);
-    setUser(response.data.user);
-  }
-
-  function logout() {
-    localStorage.removeItem("vvh_token");
+  async function logout() {
+    await signOut(auth);
     setUser(null);
   }
 
-  const value = useMemo(() => ({ user, loading, login, logout }), [user, loading]);
+  const value = useMemo(() => ({ user, loading, logout }), [user, loading]);
+
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

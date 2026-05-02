@@ -1,13 +1,12 @@
 import { LogIn } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext.jsx";
-import { getErrorMessage } from "../services/api.js";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../firebase";
 
 export default function AdminLogin() {
-  const { login } = useAuth();
   const navigate = useNavigate();
-  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -16,11 +15,12 @@ export default function AdminLogin() {
     event.preventDefault();
     setError("");
     setLoading(true);
+
     try {
-      await login(phone, password);
+      await signInWithEmailAndPassword(auth, email, password);
       navigate("/admin/dashboard");
     } catch (err) {
-      setError(getErrorMessage(err));
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -33,10 +33,33 @@ export default function AdminLogin() {
           <p className="eyebrow">Secure staff access</p>
           <h1>Panchayat login</h1>
         </div>
-        <label>Phone number<input required value={phone} onChange={(e) => setPhone(e.target.value)} /></label>
-        <label>Password<input required type="password" value={password} onChange={(e) => setPassword(e.target.value)} /></label>
+
+        <label>
+          Email
+          <input
+            required
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="staff@example.com"
+          />
+        </label>
+
+        <label>
+          Password
+          <input
+            required
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </label>
+
         {error && <p className="error-message">{error}</p>}
-        <button className="primary-button big-button" disabled={loading}><LogIn size={22} /> {loading ? "Signing in..." : "Login"}</button>
+
+        <button className="primary-button big-button" disabled={loading}>
+          <LogIn size={22} /> {loading ? "Signing in..." : "Login"}
+        </button>
       </form>
     </div>
   );
